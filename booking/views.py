@@ -3,12 +3,14 @@ from django.http import HttpResponse, Http404, HttpResponseForbidden
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
 
 from .forms import BookingForm, JoinForm
 from .models import Booking
 from car.models import Car
 
 import googlemaps
+import os
 from datetime import datetime, timedelta
 
 # Create your views here.
@@ -58,7 +60,7 @@ def delete_booking(id_booking):
 
 
 def get_duration(start_address, dest_address):
-    gmaps = googlemaps.Client(key='HARDCODED_KEY')
+    gmaps = googlemaps.Client(key=os.environ['GMAPS_KEY'])
     now = datetime.now()
     try:
         directions_result = gmaps.directions(
@@ -107,7 +109,7 @@ def new(request):
             booking.save()
         return redirect('/bookings/' + str(booking))
 
-        return render(request, 'booking/new.html', locals())
+    return render(request, 'booking/new.html', locals())
 
 
 def delete(request, bookingID):
@@ -131,4 +133,19 @@ def join(request):
         userDjango.save()
         return redirect('/bookings/login')
 
-        return render(request, 'booking/join.html', locals())
+    return render(request, 'booking/join.html', locals())
+
+
+def login(request):
+    print('-----------------------------------')
+    form = JoinForm(request.POST or None)
+    if form.is_valid():
+        username=form.cleaned_data['username'],
+        password=form.cleaned_data['password']
+        user = authenticate(username, password)
+        if user is not None:
+            return redirect('/bookings/home')
+
+    return render(request, 'booking/join.html', locals())
+
+
